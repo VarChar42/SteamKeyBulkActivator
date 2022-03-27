@@ -5,7 +5,7 @@ namespace SteamKeyBulkActivator;
 public class CachedKey : IEquatable<CachedKey>
 {
     public string Key { get; set; }
-    public EPurchaseResultDetail LastResultDetails { get; set; }
+    public EResult Result { get; set; }
     public DateTime LastResultDateTime { get; set; }
 
     public bool Equals(CachedKey? other)

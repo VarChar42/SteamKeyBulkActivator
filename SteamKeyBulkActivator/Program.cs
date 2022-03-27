@@ -130,7 +130,7 @@ namespace SteamKeyBulkActivator
                     cache.SetResultDetails(code, result.Value);
                     cache.Save();
                 }
-                if (result == EPurchaseResultDetail.RateLimited)
+                if (result == EResult.RateLimitExceeded)
                 {
                     Console.WriteLine("RateLimited ... Aborting...");
                     break;

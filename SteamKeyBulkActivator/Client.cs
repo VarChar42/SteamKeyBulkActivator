@@ -122,7 +122,7 @@ public class Client
         LoggedInEvent?.Invoke(this, callback);
     }
 
-    public async Task<EPurchaseResultDetail?> Redeem(string key)
+    public async Task<EResult?> Redeem(string key)
     {
         if (string.IsNullOrEmpty(key))
         {
@@ -151,7 +151,13 @@ public class Client
         {
             var callback = await new AsyncJob<SteamApps.PurchaseResponseCallback>(steamClient, request.SourceJobID)
                 .ToTask();
-            return callback.PurchaseResultDetail;
+
+            if (callback.PurchaseResultDetail == EPurchaseResultDetail.RateLimited)
+            {
+                return EResult.RateLimitExceeded;
+            }
+            
+            return callback.Result;
         }
         catch (Exception)
         {

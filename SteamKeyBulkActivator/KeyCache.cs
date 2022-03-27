@@ -9,8 +9,8 @@ public class KeyCache
 
     private Dictionary<string, CachedKey> steamKeys;
 
-    private static readonly EPurchaseResultDetail[] NotSkipResult = new[]
-        {EPurchaseResultDetail.RateLimited, EPurchaseResultDetail.NoDetail};
+    private static readonly EResult[] NotSkipResult = new[]
+        {EResult.RateLimitExceeded, EResult.Invalid, EResult.Fail};
 
     public KeyCache()
     {
@@ -56,14 +56,14 @@ public class KeyCache
                 return true;
             }
             
-            return !NotSkipResult.Contains(cachedKey.LastResultDetails);
+            return !NotSkipResult.Contains(cachedKey.Result);
         }
         
         
         steamKeys[key] = new CachedKey
         {
             Key = key,
-            LastResultDetails = EPurchaseResultDetail.NoDetail,
+            Result = EResult.Invalid,
             LastResultDateTime = DateTime.Now
                 
         };
@@ -75,17 +75,17 @@ public class KeyCache
         var keys = steamKeys.Values;
         foreach (var key in keys)
         {
-            Console.WriteLine($"{key.Key} : {key.LastResultDetails} [{key.LastResultDateTime.ToShortDateString()}]");
+            Console.WriteLine($"{key.Key} : {key.Result} [{key.LastResultDateTime.ToShortDateString()}]");
         }
 
         Console.WriteLine($"A total of {keys.Count} are loaded!");
     }
     
-    public void SetResultDetails(string key, EPurchaseResultDetail result)
+    public void SetResultDetails(string key, EResult result)
     {
         var cachedKey = steamKeys[key];
 
-        cachedKey.LastResultDetails = result;
+        cachedKey.Result = result;
         cachedKey.LastResultDateTime = DateTime.Now;
     }
 
