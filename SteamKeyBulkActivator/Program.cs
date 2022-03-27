@@ -10,15 +10,58 @@ namespace SteamKeyBulkActivator
         static void Main(string[] args)
         {
             var cache = new KeyCache();
-
+            
+            var readClipboard = false;
             var cmd = true;
             while (cmd)
             {
                 Console.WriteLine("Press ENTER to redeem codes from clipboard!");
                 Console.WriteLine("Write \"done\" to start redeeming...");
                 Console.WriteLine("      \"print\" to print all keys");
+                Console.WriteLine("      \"remove <key>\" to remove a keys");
                 var line = Console.ReadLine();
                 var text = Clipboard.GetText();
+                var lineArgs = line.Split(" ");
+                
+                
+                
+                switch (lineArgs[0])
+                {
+                    case "done":
+                        cmd = false;
+                        break;
+                    case "print":
+                        cache.Print();
+                        break;
+                    case "remove":
+                        if (lineArgs.Length != 2)
+                        {
+                            break;
+                        }
+
+                        if (!cache.Remove(lineArgs[1]))
+                        {
+                            Console.WriteLine("Key not found!");
+                        }
+                        else
+                        {
+                            Console.WriteLine("Key removed!");
+                            cache.Save();
+                        }
+                        
+                        break;
+                    
+                    default:
+                        readClipboard = true;
+                        break;
+                }
+
+                if (!readClipboard)
+                {
+                    continue;
+                }
+
+                readClipboard = false;
                 
                 var codes = Regex.Matches(text, @"\w{5}-\w{5}-\w{5}").Select(match => match.Value);
 
@@ -39,15 +82,6 @@ namespace SteamKeyBulkActivator
                 
                 Console.WriteLine($"Found {newCodes} new codes and {oldCodes} old codes");
                 cache.Save();
-                switch (line)
-                {
-                    case "done":
-                        cmd = false;
-                        break;
-                    case "print":
-                        cache.Print();
-                        break;
-                }
                 
             }
             

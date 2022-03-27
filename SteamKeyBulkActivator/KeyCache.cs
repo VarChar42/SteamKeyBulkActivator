@@ -88,4 +88,9 @@ public class KeyCache
         cachedKey.LastResultDetails = result;
         cachedKey.LastResultDateTime = DateTime.Now;
     }
+
+    public bool Remove(string key)
+    {
+        return steamKeys.Remove(key);
+    }
 }
