@@ -10,7 +10,7 @@ namespace SteamKeyBulkActivator
         static void Main(string[] args)
         {
             var cache = new KeyCache();
-            
+
             var cmd = true;
             while (cmd)
             {
@@ -22,8 +22,8 @@ namespace SteamKeyBulkActivator
                 
                 var codes = Regex.Matches(text, @"\w{5}-\w{5}-\w{5}").Select(match => match.Value);
 
-                int newCodes = 0;
-                int oldCodes = 0;
+                var newCodes = 0;
+                var oldCodes = 0;
                 foreach (var code in codes)
                 {
                     if (cache.IsRedeemed(code, false))
@@ -104,7 +104,6 @@ namespace SteamKeyBulkActivator
 
                 Console.WriteLine($"{code} : {result?.ToString() ?? "ERROR"}");
             }
-           
             
             Console.WriteLine("DONE");
 

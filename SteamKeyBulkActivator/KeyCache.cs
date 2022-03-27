@@ -51,7 +51,12 @@ public class KeyCache
     {
         if (steamKeys.TryGetValue(key, out CachedKey cachedKey))
         {
-            return !skip || !NotSkipResult.Contains(cachedKey.LastResultDetails);
+            if (!skip)
+            {
+                return true;
+            }
+            
+            return !NotSkipResult.Contains(cachedKey.LastResultDetails);
         }
         
         
