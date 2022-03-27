@@ -10,7 +10,7 @@ namespace SteamKeyBulkActivator
         static void Main(string[] args)
         {
             var cache = new KeyCache();
-            
+
             var readClipboard = false;
             var cmd = true;
             while (cmd)
@@ -114,8 +114,6 @@ namespace SteamKeyBulkActivator
         
             foreach (var code in cache.Codes)
             {
-                cache.SetResultDetails(code, 0);
-                
                 if (cache.IsRedeemed(code))
                 {
                     continue;

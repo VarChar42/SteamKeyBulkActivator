@@ -98,7 +98,8 @@ public class Client
             TwoFactorCode = twoFactorCode,
             LoginKey = loginKey,
             
-            ShouldRememberPassword = true,
+            LoginID = 42,
+            ShouldRememberPassword = false,
         });
     }
 
