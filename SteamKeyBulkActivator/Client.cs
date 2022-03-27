@@ -6,26 +6,48 @@ namespace SteamKeyBulkActivator;
 
 public class Client
 {
-    private bool isRunning = true;
+    private const string SentryFileName = "sentry.bin";
+
+    private bool isRunning = false;
     private SteamUser? steamUser;
     private SteamClient steamClient;
     private CallbackManager callbackManager;
     private Thread thread;
-    private string username;
-    private string password;
+    private string? username;
+    private string? password;
 
     private string? authCode;
     private string? twoFactorCode;
+    private string? loginKey;
 
-    public event EventHandler LoggedInEvent;
+    public bool SentryLoginAvailable => File.Exists(SentryFileName);
 
-    public void Login(string username, string password, string? twoFactorCode = null, string? authCode = null)
+    public event EventHandler<SteamUser.LoggedOnCallback> LoggedInEvent;
+    
+    public void Login(string? username, string? password, string? twoFactorCode = null, string? authCode = null)
     {
+        if (isRunning)
+        {
+            return;
+        }
+
+        isRunning = true;
+
         this.username = username;
         this.password = password;
 
+        if (twoFactorCode?.Length > 5)
+        {
+            this.loginKey = twoFactorCode;
+            Console.WriteLine("Using loginKey");
+        }
+        else
+        {
+            this.twoFactorCode = twoFactorCode;
+        }
+        
         this.authCode = authCode;
-        this.twoFactorCode = twoFactorCode;
+        
 
         steamClient = new SteamClient();
         callbackManager = new CallbackManager(steamClient);
@@ -37,14 +59,18 @@ public class Client
 
         callbackManager.Subscribe<SteamUser.LoggedOnCallback>(OnLoggedOn);
         callbackManager.Subscribe<SteamUser.LoggedOffCallback>(OnLoggedOff);
-
-        callbackManager.Subscribe<SteamUser.UpdateMachineAuthCallback>(OnMachineAuth);
-
+        
+        callbackManager.Subscribe<SteamUser.LoginKeyCallback>(OnLoginKey);
 
         Console.WriteLine("Connecting to Steam...");
 
         thread = new Thread(Run);
         thread.Start();
+    }
+
+    private void OnLoginKey(SteamUser.LoginKeyCallback obj)
+    {
+        Console.WriteLine($"Use this key for your steam guard login: {obj.LoginKey}");
     }
 
     private void Run()
@@ -53,7 +79,6 @@ public class Client
 
         while (isRunning)
         {
-            // in order for the callbacks to get routed, they need to be handled by the manager
             callbackManager.RunWaitCallbacks(TimeSpan.FromSeconds(1));
         }
 
@@ -63,58 +88,38 @@ public class Client
     private void OnConnected(SteamClient.ConnectedCallback callback)
     {
         Console.WriteLine("Connected to Steam! Logging in '{0}'...", username);
-
-        /*
-        byte[] sentryHash = null;
-        if (File.Exists("sentry.bin"))
-        {
-            // if we have a saved sentry file, read and sha-1 hash it
-            byte[] sentryFile = File.ReadAllBytes("sentry.bin");
-            sentryHash = CryptoHelper.SHAHash(sentryFile);
-        }
-        */
-
+        
         steamUser.LogOn(new SteamUser.LogOnDetails
         {
             Username = username,
             Password = password,
-
-            // in this sample, we pass in an additional authcode
-            // this value will be null (which is the default) for our first logon attempt
+            
             AuthCode = authCode,
-
-            // if the account is using 2-factor auth, we'll provide the two factor code instead
-            // this will also be null on our first logon attempt
             TwoFactorCode = twoFactorCode,
-
-            SentryFileHash = null,
+            LoginKey = loginKey,
+            
+            ShouldRememberPassword = true,
         });
     }
+
 
     private void OnDisconnected(SteamClient.DisconnectedCallback callback)
     {
         Console.WriteLine("Disconnected from Steam");
-
         isRunning = false;
     }
 
     void OnLoggedOn(SteamUser.LoggedOnCallback callback)
     {
-        // bool isSteamGuard = callback.Result == EResult.AccountLogonDenied;
-        // bool is2FA = callback.Result == EResult.AccountLoginDeniedNeedTwoFactor;
-
-
         if (callback.Result != EResult.OK)
         {
             Console.WriteLine("Unable to logon to Steam: {0} / {1}", callback.Result, callback.ExtendedResult);
 
-            isRunning = false;
             return;
         }
 
         Console.WriteLine("Successfully logged on!");
-
-        LoggedInEvent?.Invoke(this, null);
+        LoggedInEvent?.Invoke(this, callback);
     }
 
     public async Task<EPurchaseResultDetail?> Redeem(string key)
@@ -158,45 +163,9 @@ public class Client
     {
         Console.WriteLine("Logged off of Steam: {0}", callback.Result);
     }
-
-    private void OnMachineAuth(SteamUser.UpdateMachineAuthCallback callback)
+    
+    public void Disconnect()
     {
-        /*
-       Console.WriteLine("Updating sentryfile...");
-      
-       int fileSize;
-       byte[] sentryHash;
-       using (var fs = File.Open("sentry.bin", FileMode.OpenOrCreate, FileAccess.ReadWrite))
-       {
-           fs.Seek(callback.Offset, SeekOrigin.Begin);
-           fs.Write(callback.Data, 0, callback.BytesToWrite);
-           fileSize = (int) fs.Length;
-
-           fs.Seek(0, SeekOrigin.Begin);
-           using var sha = SHA1.Create();
-           sentryHash = sha.ComputeHash(fs);
-       }
-      
-
-       // inform the steam servers that we're accepting this sentry file
-       steamUser.SendMachineAuthResponse(new SteamUser.MachineAuthDetails
-       {
-           JobID = callback.JobID,
-
-           FileName = callback.FileName,
-
-           BytesWritten = callback.BytesToWrite,
-           FileSize = fileSize,
-           Offset = callback.Offset,
-
-           Result = EResult.OK,
-           LastError = 0,
-
-           OneTimePassword = callback.OneTimePassword,
-
-           SentryFileHash = sentryHash,
-       });
-       Console.WriteLine("Done!");
-        */
+        steamClient.Disconnect();
     }
 }
